@@ -20,7 +20,7 @@ class HubConfig:
 
         self.hub_dir = hub_dir
         if not self.hub_dir.exists():
-            raise RuntimeError(f"hub_dir not found: {self.hub_dir}")
+            raise RuntimeError(f'hub_dir not found: {self.hub_dir}')
 
         with open(self.hub_dir / 'hub-config' / 'tasks.json') as fp:
             self.tasks: dict = json.load(fp)
