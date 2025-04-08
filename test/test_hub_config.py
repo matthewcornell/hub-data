@@ -6,7 +6,7 @@ from hubdata import HubConfig
 
 
 def test_hub_dir_existence():
-    with pytest.raises(RuntimeError, match="hub_dir not found"):
+    with pytest.raises(RuntimeError, match='hub_dir not found'):
         hub_dir = Path('test/hubs/example-complex-forecast-hub')
         HubConfig(hub_dir / 'nonexistent-dir')
 
