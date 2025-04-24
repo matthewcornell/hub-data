@@ -50,6 +50,14 @@ div.sphinxsidebar a {
     color: #003d45;
 }
 
+div.viewcode-block:target {
+    background: none;
+}
+
+div.viewcode-block a:visited {
+    color: #5FCDE3
+}
+
 code.descname {
     color: #6840ab;
 }
