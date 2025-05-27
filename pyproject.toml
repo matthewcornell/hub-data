@@ -10,6 +10,8 @@ requires-python = '>=3.9'
 readme = 'README.md'
 
 dependencies = [
+    "pyarrow>=19.0.1",
+    "pytest>=8.3.5",
     'rich',
     'structlog',
 ]
@@ -62,3 +64,6 @@ inline-quotes = 'single'
 
 [tool.ruff.format]
 quote-style = 'single'
+
+[tool.setuptools.dynamic]
+version = { attr = "hubdata.__version__" }
