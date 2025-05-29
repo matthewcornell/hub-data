@@ -273,7 +273,7 @@
               "required": ["2022-06-05"],
               "optional": null
             },
-             "scenario_id": {
+            "scenario_id": {
               "required": ["A-2022-05-09", "B-2022-05-09", "C-2022-05-09", "D-2022-05-09"],
               "optional": null
             },
@@ -334,7 +334,7 @@
               "required": ["2022-05-02"],
               "optional": null
             },
-             "scenario_id": {
+            "scenario_id": {
               "required": null,
               "optional": ["A-2022-05-02", "B-2022-05-02", "C-2022-05-02", "D-2022-05-02"]
             },
