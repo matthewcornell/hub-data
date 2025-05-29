@@ -40,7 +40,7 @@ def create_hub_schema(tasks: dict, output_type_id_datatype: str | None = 'from_c
         try:
             _pa_type_for_hub_type(output_type_id_datatype)
         except ValueError:
-            raise ValueError(f"invalid {output_type_id_datatype=}")
+            raise ValueError(f'invalid {output_type_id_datatype=}')
 
     # override the `output_type_id` column if necessary (its value to this point is essentially "auto")
     if ((output_type_id_datatype == 'from_config')
@@ -107,14 +107,14 @@ def _pa_type_for_hub_type(hub_type: str) -> pa.DataType:
     """
     try:
         return {
-            "character": pa.string(),
-            "double": pa.float64(),
-            "integer": pa.int32(),
-            "logical": pa.bool_(),  # is logical used in any hubs? only applies to `output_type_id_datatype`?
-            "Date": pa.date32(),
+            'character': pa.string(),
+            'double': pa.float64(),
+            'integer': pa.int32(),
+            'logical': pa.bool_(),  # is logical used in any hubs? only applies to `output_type_id_datatype`?
+            'Date': pa.date32(),
         }[hub_type]
     except KeyError:
-        raise ValueError(f"invalid hub_type={hub_type}")
+        raise ValueError(f'invalid hub_type={hub_type}')
 
 
 def _pa_type_for_req_and_opt_vals(required: list | None, optional: list | None) -> pa.DataType | None:
@@ -150,7 +150,7 @@ def _pa_type_for_req_and_opt_vals(required: list | None, optional: list | None) 
     for value in req_and_opt_vals:
         # try parsing in this order: NA, pa.date32, pa.float64, pa.int32
         pa_type = pa.string()
-        if value == "NA":
+        if value == 'NA':
             continue  # special case: NA should not influence returned type
         elif is_date(value):  # date
             pa_type = pa.date32()

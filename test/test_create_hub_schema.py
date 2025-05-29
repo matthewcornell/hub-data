@@ -8,19 +8,19 @@ from hubdata import HubConfig, create_hub_schema
 from hubdata.hub_schema import _pa_type_for_req_and_opt_vals, _pa_type_simplest_for_pa_types
 
 
-@pytest.mark.parametrize("required,optional,exp_pa_type",
-                         [(None, ["2024-11-16", "2024-11-23"], pa.date32()),
-                          (["2024-11-16", "2024-11-23"], None, pa.date32()),
-                          (None, ["wk inc covid hosp"], pa.string()),
+@pytest.mark.parametrize('required,optional,exp_pa_type',
+                         [(None, ['2024-11-16', '2024-11-23'], pa.date32()),
+                          (['2024-11-16', '2024-11-23'], None, pa.date32()),
+                          (None, ['wk inc covid hosp'], pa.string()),
                           (None, [-1, 0, 1, 2, 3], pa.int32()),
                           ([0.01, 0.025], None, pa.float64()),
                           ([0.25, 1], None, pa.float64()),
-                          (None, ["NA"], None)])
+                          (None, ['NA'], None)])
 def tests__pa_type_for_req_and_opt_vals(required, optional, exp_pa_type):
     assert _pa_type_for_req_and_opt_vals(required, optional) == exp_pa_type
 
 
-@pytest.mark.parametrize("pa_types,exp_pa_type",
+@pytest.mark.parametrize('pa_types,exp_pa_type',
                          [([pa.float64(), pa.string()], pa.string()),
                           ([pa.float64(), pa.float64()], pa.float64()),
                           ([pa.int32(), pa.float64()], pa.float64()),
@@ -145,9 +145,9 @@ def test_variant_nowcast_hub():
     assert act_schema == exp_schema
 
 
-@pytest.mark.parametrize("output_type_id_datatype,is_valid",
-                         [("from_config", True), ("auto", True), ("character", True), ("double", True),
-                          ("integer", True), ("logical", True), ("Date", True), ("bad_type", False)])
+@pytest.mark.parametrize('output_type_id_datatype,is_valid',
+                         [('from_config', True), ('auto', True), ('character', True), ('double', True),
+                          ('integer', True), ('logical', True), ('Date', True), ('bad_type', False)])
 def test_output_type_id_datatype_choices(output_type_id_datatype, is_valid):
     hub_dir = Path('test/hubs/flu-metrocast')
     hub_config = HubConfig(hub_dir)
@@ -158,10 +158,10 @@ def test_output_type_id_datatype_choices(output_type_id_datatype, is_valid):
             create_hub_schema(hub_config.tasks, output_type_id_datatype=output_type_id_datatype)
 
 
-@pytest.mark.parametrize("hub_datatype,exp_pa_type",
-                         [("from_config", pa.float64()), ("auto", pa.float64()), ("character", pa.string()),
-                          ("double", pa.float64()), ("integer", pa.int32()), ("logical", pa.bool_()),
-                          ("Date", pa.date32())])
+@pytest.mark.parametrize('hub_datatype,exp_pa_type',
+                         [('from_config', pa.float64()), ('auto', pa.float64()), ('character', pa.string()),
+                          ('double', pa.float64()), ('integer', pa.int32()), ('logical', pa.bool_()),
+                          ('Date', pa.date32())])
 def test_output_type_id_datatype(hub_datatype, exp_pa_type):
     # tests the behavior documented at https://hubverse.io/en/latest/quickstart-hub-admin/tasks-config.html#step-9-optional-set-up-output-type-id-datatype
     # NB: flu-metrocast is the only test hub that sets optional `output_type_id_datatype` property (to "auto"):
