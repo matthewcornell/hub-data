@@ -30,8 +30,8 @@ def test__pa_type_simplest_for_pa_types(pa_types, exp_pa_type):
 
 
 def test_covid19_forecast_hub():
-    hub_config = connect_hub(Path('test/hubs/covid19-forecast-hub'))
-    act_schema = create_hub_schema(hub_config.tasks)
+    hub_connection = connect_hub(Path('test/hubs/covid19-forecast-hub'))
+    act_schema = create_hub_schema(hub_connection.tasks)
     exp_schema = pa.schema([('reference_date', pa.date32()),
                             ('target', pa.string()),
                             ('horizon', pa.int32()),
@@ -47,8 +47,8 @@ def test_covid19_forecast_hub():
 
 
 def test_ecfh():
-    hub_config = connect_hub(Path('test/hubs/example-complex-forecast-hub'))
-    act_schema = create_hub_schema(hub_config.tasks)
+    hub_connection = connect_hub(Path('test/hubs/example-complex-forecast-hub'))
+    act_schema = create_hub_schema(hub_connection.tasks)
     exp_schema = pa.schema([('reference_date', pa.date32()),
                             ('target', pa.string()),
                             ('horizon', pa.int32()),
@@ -62,8 +62,8 @@ def test_ecfh():
 
 
 def test_ecsh():
-    hub_config = connect_hub(Path('test/hubs/example-complex-scenario-hub'))
-    act_schema = create_hub_schema(hub_config.tasks)
+    hub_connection = connect_hub(Path('test/hubs/example-complex-scenario-hub'))
+    act_schema = create_hub_schema(hub_connection.tasks)
     exp_schema = pa.schema([('origin_date', pa.date32()),
                             ('scenario_id', pa.string()),
                             ('location', pa.string()),
@@ -80,8 +80,8 @@ def test_ecsh():
 
 def test_flu_metrocast():
     # this hub uses v5.0 schema where "output_type_id" only has "required" and not "optional"
-    hub_config = connect_hub(Path('test/hubs/flu-metrocast'))
-    act_schema = create_hub_schema(hub_config.tasks)
+    hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
+    act_schema = create_hub_schema(hub_connection.tasks)
     exp_schema = pa.schema([('reference_date', pa.date32()),
                             ('target', pa.string()),
                             ('horizon', pa.int32()),
@@ -95,8 +95,8 @@ def test_flu_metrocast():
 
 
 def test_flusight_forecast_hub():
-    hub_config = connect_hub(Path('test/hubs/FluSight-forecast-hub'))
-    act_schema = create_hub_schema(hub_config.tasks)
+    hub_connection = connect_hub(Path('test/hubs/FluSight-forecast-hub'))
+    act_schema = create_hub_schema(hub_connection.tasks)
     exp_schema = pa.schema([('reference_date', pa.date32()),
                             ('target', pa.string()),
                             ('horizon', pa.string()),
@@ -110,8 +110,8 @@ def test_flusight_forecast_hub():
 
 
 def test_simple():
-    hub_config = connect_hub(Path('test/hubs/simple'))
-    act_schema = create_hub_schema(hub_config.tasks)
+    hub_connection = connect_hub(Path('test/hubs/simple'))
+    act_schema = create_hub_schema(hub_connection.tasks)
     exp_schema = pa.schema([('origin_date', pa.date32()),
                             ('target', pa.string()),
                             ('horizon', pa.int32()),
@@ -125,8 +125,8 @@ def test_simple():
 
 
 def test_variant_nowcast_hub():
-    hub_config = connect_hub(Path('test/hubs/variant-nowcast-hub'))
-    act_schema = create_hub_schema(hub_config.tasks)
+    hub_connection = connect_hub(Path('test/hubs/variant-nowcast-hub'))
+    act_schema = create_hub_schema(hub_connection.tasks)
     exp_schema = pa.schema([('nowcast_date', pa.date32()),
                             ('target_date', pa.date32()),
                             ('location', pa.string()),
@@ -142,12 +142,12 @@ def test_variant_nowcast_hub():
                          [('from_config', True), ('auto', True), ('character', True), ('double', True),
                           ('integer', True), ('logical', True), ('Date', True), ('bad_type', False)])
 def test_output_type_id_datatype_choices(output_type_id_datatype, is_valid):
-    hub_config = connect_hub(Path('test/hubs/flu-metrocast'))
+    hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
     if is_valid:
-        create_hub_schema(hub_config.tasks, output_type_id_datatype=output_type_id_datatype)
+        create_hub_schema(hub_connection.tasks, output_type_id_datatype=output_type_id_datatype)
     else:
         with pytest.raises(ValueError):
-            create_hub_schema(hub_config.tasks, output_type_id_datatype=output_type_id_datatype)
+            create_hub_schema(hub_connection.tasks, output_type_id_datatype=output_type_id_datatype)
 
 
 @pytest.mark.parametrize('hub_datatype,exp_pa_type',
@@ -157,20 +157,20 @@ def test_output_type_id_datatype_choices(output_type_id_datatype, is_valid):
 def test_output_type_id_datatype(hub_datatype, exp_pa_type):
     # tests the behavior documented at https://hubverse.io/en/latest/quickstart-hub-admin/tasks-config.html#step-9-optional-set-up-output-type-id-datatype
     # NB: flu-metrocast is the only test hub that sets optional `output_type_id_datatype` property (to "auto"):
-    hub_config = connect_hub(Path('test/hubs/flu-metrocast'))
+    hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
     if hub_datatype != 'from_config':
-        hub_config.tasks['output_type_id_datatype'] = hub_datatype
-    act_schema = create_hub_schema(hub_config.tasks, output_type_id_datatype=hub_datatype)
+        hub_connection.tasks['output_type_id_datatype'] = hub_datatype
+    act_schema = create_hub_schema(hub_connection.tasks, output_type_id_datatype=hub_datatype)
     assert act_schema.field('output_type_id').type == exp_pa_type
 
 
 # test_that("create_hub_schema works correctly", { .. }) from hubData/tests/testthat/test-create_hub_schema.R
 def test_r_test_1():
-    hub_config = connect_hub(Path('test/hubs/simple'))
+    hub_connection = connect_hub(Path('test/hubs/simple'))
 
     # case: default options
     # exp_schema from R: "origin_date: date32[day]\ntarget: string\nhorizon: int32\nlocation: string\nage_group: string\noutput_type: string\noutput_type_id: double\nvalue: int32\nmodel_id: string"
-    act_schema = create_hub_schema(hub_config.tasks)
+    act_schema = create_hub_schema(hub_connection.tasks)
     exp_schema = pa.schema([('origin_date', pa.date32()),
                             ('target', pa.string()),
                             ('horizon', pa.int32()),
@@ -184,7 +184,7 @@ def test_r_test_1():
 
     # case: output_type_id_datatype param
     # exp_schema from R: "origin_date: date32[day]\ntarget: string\nhorizon: int32\nlocation: string\nage_group: string\noutput_type: string\noutput_type_id: string\nvalue: int32\nmodel_id: string"
-    act_schema = create_hub_schema(hub_config.tasks, output_type_id_datatype='character')
+    act_schema = create_hub_schema(hub_connection.tasks, output_type_id_datatype='character')
     exp_schema = pa.schema([('origin_date', pa.date32()),
                             ('target', pa.string()),
                             ('horizon', pa.int32()),
@@ -198,8 +198,8 @@ def test_r_test_1():
 
     # case: partitions param
     # exp_schema from R: "origin_date: date32[day]\ntarget: string\nhorizon: int32\nlocation: string\nage_group: string\noutput_type: string\noutput_type_id: double\nvalue: int32\nteam_abbr: string\nmodel_abbr: string"
-    act_schema = create_hub_schema(hub_config.tasks, partitions=(('team_abbr', pa.string()),
-                                                                 ('model_abbr', pa.string())))
+    act_schema = create_hub_schema(hub_connection.tasks, partitions=(('team_abbr', pa.string()),
+                                                                     ('model_abbr', pa.string())))
     exp_schema = pa.schema([('origin_date', pa.date32()),
                             ('target', pa.string()),
                             ('horizon', pa.int32()),
@@ -214,7 +214,7 @@ def test_r_test_1():
 
     # case: partitions None
     # exp_schema from R: "origin_date: date32[day]\ntarget: string\nhorizon: int32\nlocation: string\nage_group: string\noutput_type: string\noutput_type_id: string\nvalue: int32"
-    act_schema = create_hub_schema(hub_config.tasks, partitions=None, output_type_id_datatype='character')
+    act_schema = create_hub_schema(hub_connection.tasks, partitions=None, output_type_id_datatype='character')
     exp_schema = pa.schema([('origin_date', pa.date32()),
                             ('target', pa.string()),
                             ('horizon', pa.int32()),
