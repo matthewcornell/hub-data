@@ -8,6 +8,7 @@ from rich.panel import Panel
 from hubdata import connect_hub, create_hub_schema
 from hubdata.logging import setup_logging
 
+
 setup_logging()
 logger = structlog.get_logger()
 
@@ -23,8 +24,8 @@ def print_schema(hub_dir):
     """
     A subcommand that prints the schema for `hub_dir`.
     """
-    hub_config = connect_hub(hub_dir)
-    schema = create_hub_schema(hub_config.tasks)
+    hub_connection = connect_hub(hub_dir)
+    schema = create_hub_schema(hub_connection.tasks)
     console = Console()
 
     # create the hub_dir group lines
