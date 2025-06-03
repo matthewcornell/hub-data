@@ -2,18 +2,17 @@ from pathlib import Path
 
 import pytest
 
-from hubdata import HubConfig
+from hubdata import connect_hub
 
 
 def test_hub_dir_existence():
     with pytest.raises(RuntimeError, match='hub_dir not found'):
-        hub_dir = Path('test/hubs/example-complex-forecast-hub')
-        HubConfig(hub_dir / 'nonexistent-dir')
+        connect_hub(Path('test/hubs/example-complex-forecast-hub') / 'nonexistent-dir')
 
 
 def test_hub_fields():
     hub_dir = Path('test/hubs/example-complex-scenario-hub')
-    hub_config = HubConfig(hub_dir)
+    hub_config = connect_hub(hub_dir)
     assert hub_config.hub_dir == hub_dir
 
     # spot-check tasks

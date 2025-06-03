@@ -8,9 +8,9 @@ import pyarrow as pa
 def create_hub_schema(tasks: dict, output_type_id_datatype: str = 'from_config',
                       partitions: tuple[tuple[str, pa.DataType]] | None = (('model_id', pa.string()),)) -> pa.schema:
     """
-    Top-level function for creating a schema for the passed `HubConfig`.
+    Top-level function for creating a schema for the passed `HubConnection`.
 
-    :param tasks: a hub's `tasks.json` contents from which to create a schema - see `HubConfig.tasks`
+    :param tasks: a hub's `tasks.json` contents from which to create a schema - see `HubConnection.tasks`
     :param output_type_id_datatype: a string that's one of `"from_config"`, `"auto"`, `"character"`, `"double"`,
         `"integer"`, `"logical"`, `"Date"`. Defaults to `"from_config"` which uses the setting in the
         `output_type_id_datatype` property in the `tasks.json` config file if available. If the property is not set in
@@ -21,7 +21,7 @@ def create_hub_schema(tasks: dict, output_type_id_datatype: str = 'from_config',
         auto-determined.
     :param partitions: a list of 2-tuples (column_name, data_type) specifying the arrow data types
         of any partitioning column. pass None if no partitions
-    :return: a `pyarrow.Schema` for the passed `HubConfig`
+    :return: a `pyarrow.Schema` for the passed `HubConnection`
     """
     # build col_name_to_pa_types, which maps each found column_name to a list of pa.DataTypes that were found for it.
     # afterward we merge the data types to get the "simplest" one
