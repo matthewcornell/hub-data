@@ -8,7 +8,6 @@ from rich.panel import Panel
 from hubdata import connect_hub, create_hub_schema
 from hubdata.logging import setup_logging
 
-
 setup_logging()
 logger = structlog.get_logger()
 
