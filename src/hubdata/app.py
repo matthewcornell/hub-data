@@ -5,7 +5,7 @@ import structlog
 from rich.console import Console, Group
 from rich.panel import Panel
 
-from hubdata import HubConfig, create_hub_schema
+from hubdata import connect_hub, create_hub_schema
 from hubdata.logging import setup_logging
 
 setup_logging()
@@ -23,21 +23,13 @@ def print_schema(hub_dir):
     """
     A subcommand that prints the schema for `hub_dir`.
     """
-    hub_config = HubConfig(hub_dir)
+    hub_config = connect_hub(hub_dir)
     schema = create_hub_schema(hub_config.tasks)
-    rounds = hub_config.tasks['rounds']
     console = Console()
 
     # create the hub_dir group lines
     hub_dir_lines = ['[b]hub_dir[/b]:',
                      f'- {hub_dir}']
-
-    # create the rounds group lines
-    rounds_lines = [f'\n[b]rounds[/b] ({len(rounds)}):']
-    for the_round in rounds:
-        plural = 's' if len(the_round['model_tasks']) > 1 else ''
-        rounds_lines.append(f'- [green]{the_round['round_id']}[/green] ({len(the_round['model_tasks'])} '
-                            f'model task{plural})')
 
     # create the schema group lines
     schema_lines = ['\n[b]schema[/b]:']
@@ -47,7 +39,7 @@ def print_schema(hub_dir):
     # finally, print a Panel containing all the groups
     console.print(
         Panel(
-            Group(Group(*hub_dir_lines), Group(*rounds_lines), Group(*schema_lines)),
+            Group(Group(*hub_dir_lines), Group(*schema_lines)),
             border_style='green',
             expand=False,
             padding=(1, 2),
