@@ -2,9 +2,40 @@
 
 Python tools for accessing and working with hubverse Hub data
 
+## Basic usage
+
+> Note: This package is based on the [python version](https://arrow.apache.org/docs/python/index.html) of Apache's [Arrow library](https://arrow.apache.org/docs/index.html).
+
+1. Use `connect_hub()` to get a `HubConnection` object for a local hub directory. (NB: Currently we only support connecting to local hub directories and not S3 hubs. We anticipate adding support for the latter shortly.)
+2. Call `HubConnection.get_dataset()` to get a pyarrow [Dataset](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html) for the hub's model output directory.
+3. Work with the data by calling functions directly on the dataset, or use [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) to read the data into a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) . You can use pyarrow's [compute functions](https://arrow.apache.org/docs/python/compute.html) or convert the table to another format, such as [polars](https://docs.pola.rs/api/python/dev/reference/api/polars.from_arrow.html) or [pandas](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html#pyarrow.Table.to_pandas).
+
+For example, here is code to count the number of rows total in the `test/hubs/flu-metrocast` test hub.
+
+First, start a python interpreter with the required libraries:
+
+```bash
+cd /<path_to_repos>/hub-data/
+uv run python3
+```
+
+Then run this example code:
+
+```python
+from pathlib import Path
+from hubdata import connect_hub
+
+
+hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
+hub_ds = hub_connection.get_dataset()
+hub_ds.count_rows()
+```
+
+The output should be `14895`.
+
 ## Run commands locally
 
-Following are some useful local commands for testing and trying out the package's features. The pacakge follows the [Hubverse Python package standard](https://docs.hubverse.io/en/latest/developer/python.html), and in particular uses [uv](https://docs.astral.sh/uv/) for managing Python versions, virtual environments, and dependencies.
+Following are some useful local commands for testing and trying out the package's features. The package follows the [Hubverse Python package standard](https://docs.hubverse.io/en/latest/developer/python.html), and in particular uses [uv](https://docs.astral.sh/uv/) for managing Python versions, virtual environments, and dependencies.
 
 Note that all commands should be run from this repository's root, i.e., first do:
 
@@ -14,10 +45,50 @@ cd /<path_to_repos>/hub-data/
 
 ### app (hubdata)
 
-The package provides a CLI called `hubdata` (defined in `pyproject.toml`'s "project.scripts" table). Here's an example of running the command to print a test hub's schema:
+The package provides a CLI called `hubdata` (defined in `pyproject.toml`'s "project.scripts" table). Here's an example of running the command to print a test hub's schema and its dataset info:
 
 ```bash
-uv run hubdata schema test/hubs/example-complex-scenario-hub
+uv run hubdata schema test/hubs/flu-metrocast
+╭─ flu-metrocast ─────────────╮
+│                             │
+│  hub_path:                  │
+│  - test/hubs/flu-metrocast  │
+│                             │
+│  schema:                    │
+│  - horizon: int32           │
+│  - location: string         │
+│  - model_id: string         │
+│  - output_type: string      │
+│  - output_type_id: double   │
+│  - reference_date: date32   │
+│  - target: string           │
+│  - target_end_date: date32  │
+│  - value: double            │
+│                             │
+╰─────────────────── hubdata ─╯
+
+uv run hubdata dataset test/hubs/flu-metrocast
+╭─ flu-metrocast ─────────────╮
+│                             │
+│  hub_path:                  │
+│  - test/hubs/flu-metrocast  │
+│                             │
+│  schema:                    │
+│  - horizon: int32           │
+│  - location: string         │
+│  - model_id: string         │
+│  - output_type: string      │
+│  - output_type_id: double   │
+│  - reference_date: date32   │
+│  - target: string           │
+│  - target_end_date: date32  │
+│  - value: double            │
+│                             │
+│  dataset:                   │
+│  - files: 31                │
+│  - rows: 14,895             │
+│                             │
+╰─────────────────── hubdata ─╯
 ```
 
 ### tests (pytest)
