@@ -33,8 +33,7 @@ class HubConnection:
     - schema: the pa.Schema for `HubConnection.get_dataset()`. created via `create_hub_schema()`
     - admin: the hub's `admin.json` contents as a dict
     - tasks: "" `tasks.json` ""
-    - model_metadata_schema: the hub's `model-metadata-schema.json` contents ""
-    - model_output_dir: a Path to the hub's model output directory
+    - model_output_dir: Path to the hub's model output directory
     """
 
 
@@ -66,14 +65,6 @@ class HubConnection:
 
         # set schema
         self.schema = create_hub_schema(self.tasks)
-
-        # set self.model_metadata_schema, first checking for model-metadata-schema.json existence
-        model_metadata_schema_file = self.hub_dir / 'hub-config' / 'model-metadata-schema.json'
-        if not model_metadata_schema_file.exists():
-            raise RuntimeError(f'model-metadata-schema.json not found: {model_metadata_schema_file}')
-
-        with open(model_metadata_schema_file) as fp:
-            self.model_metadata_schema: dict = json.load(fp)
 
         # set self.model_output_dir, first checking for directory existence
         model_output_dir_name = self.admin['model_output_dir'] if 'model_output_dir' in self.admin else 'model-output'

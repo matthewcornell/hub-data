@@ -31,10 +31,6 @@ def test_hub_fields():
     assert list(hub_connection.tasks.keys()) == ['schema_version', 'rounds']
     assert len(hub_connection.tasks['rounds']) == 4
 
-    # spot-check model_metadata_schema
-    assert (list(hub_connection.model_metadata_schema.keys()) ==
-            ['$schema', 'title', 'description', 'type', 'properties', 'additionalProperties', 'required'])
-
     # check schema
     assert connect_hub(hub_dir).schema == create_hub_schema(hub_connection.tasks)
 
@@ -70,7 +66,7 @@ def test_admin_model_output_dir(tmp_path):
     assert hub_connection.model_output_dir == tmp_path / model_output_dir_name
 
 
-@pytest.mark.parametrize('hub_config_file', ['admin.json', 'tasks.json', 'model-metadata-schema.json'])
+@pytest.mark.parametrize('hub_config_file', ['admin.json', 'tasks.json'])
 def test_missing_files_or_dirs(tmp_path, hub_config_file):
     """
     tests file not found or directory not found cases. notes:
@@ -88,7 +84,7 @@ def test_missing_files_or_dirs(tmp_path, hub_config_file):
 
 
 def test_query_data():
-    # case: mix of csv, parquet, and arrow files. also tests that default schema (including 'model_id' parition) is used
+    # case: mix of csv, parquet, and arrow files. also tests that default schema (incl. 'model_id' partition) is used
     hub_connection = connect_hub(Path('test/hubs/v4_flusight'))
     hub_ds = hub_connection.get_dataset()
     assert isinstance(hub_ds, pa.dataset.UnionDataset)

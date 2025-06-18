@@ -6,7 +6,7 @@ import structlog
 from rich.console import Console, Group
 from rich.panel import Panel
 
-from hubdata import connect_hub, create_hub_schema
+from hubdata import connect_hub
 from hubdata.logging import setup_logging
 
 setup_logging()
@@ -25,7 +25,6 @@ def print_schema(hub_dir):
     A subcommand that prints the output of `create_hub_schema()` for `hub_dir`.
     """
     hub_connection = connect_hub(hub_dir)
-    schema = create_hub_schema(hub_connection.tasks)
 
     # create the hub_dir group lines
     hub_dir_lines = ['[b]hub_dir[/b]:',
@@ -33,7 +32,7 @@ def print_schema(hub_dir):
 
     # create the schema group lines
     schema_lines = ['\n[b]schema[/b]:']
-    for field in sorted(schema, key=lambda _: _.name):
+    for field in sorted(hub_connection.schema, key=lambda _: _.name):  # sort schema fields by name for consistency
         schema_lines.append(f'- [green]{field.name}[/green]: [bright_magenta]{field.type}[/bright_magenta]')
 
     # finally, print a Panel containing all the groups
@@ -70,7 +69,7 @@ def print_dataset_info(hub_dir):
 
     # create the schema group lines
     schema_lines = ['\n[b]schema[/b]:']
-    for field in sorted(hub_connection.schema, key=lambda _: _.name):
+    for field in sorted(hub_connection.schema, key=lambda _: _.name):  # sort schema fields by name for consistency
         schema_lines.append(f'- [green]{field.name}[/green]: [bright_magenta]{field.type}[/bright_magenta]')
 
     # create the dataset group lines
