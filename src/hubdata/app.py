@@ -19,16 +19,16 @@ def cli():
 
 
 @cli.command(name='schema')
-@click.argument('hub_dir', type=click.Path(file_okay=False, exists=True, path_type=pathlib.Path))
-def print_schema(hub_dir):
+@click.argument('hub_path', type=click.Path(file_okay=False, exists=True, path_type=pathlib.Path))
+def print_schema(hub_path):
     """
-    A subcommand that prints the output of `create_hub_schema()` for `hub_dir`.
+    A subcommand that prints the output of `create_hub_schema()` for `hub_path`.
     """
-    hub_connection = connect_hub(hub_dir)
+    hub_connection = connect_hub(hub_path)
 
-    # create the hub_dir group lines
-    hub_dir_lines = ['[b]hub_dir[/b]:',
-                     f'- {hub_dir}']
+    # create the hub_path group lines
+    hub_path_lines = ['[b]hub_path[/b]:',
+                     f'- {hub_path}']
 
     # create the schema group lines
     schema_lines = ['\n[b]schema[/b]:']
@@ -39,33 +39,33 @@ def print_schema(hub_dir):
     console = Console()
     console.print(
         Panel(
-            Group(Group(*hub_dir_lines), Group(*schema_lines)),
+            Group(Group(*hub_path_lines), Group(*schema_lines)),
             border_style='green',
             expand=False,
             padding=(1, 2),
             subtitle='[italic]hubdata[/italic]',
             subtitle_align='right',
-            title=f'[bright_red]{hub_dir.name}[/bright_red]',
+            title=f'[bright_red]{hub_path.name}[/bright_red]',
             title_align='left')
     )
 
 
 @cli.command(name='dataset')
-@click.argument('hub_dir', type=click.Path(file_okay=False, exists=True, path_type=pathlib.Path))
-def print_dataset_info(hub_dir):
+@click.argument('hub_path', type=click.Path(file_okay=False, exists=True, path_type=pathlib.Path))
+def print_dataset_info(hub_path):
     """
-    A subcommand that prints dataset information for `hub_dir`. Currently only works with a UnionDataset of
+    A subcommand that prints dataset information for `hub_path`. Currently only works with a UnionDataset of
     FileSystemDatasets.
     """
-    hub_connection = connect_hub(hub_dir)
+    hub_connection = connect_hub(hub_path)
     hub_ds = hub_connection.get_dataset()
     if not isinstance(hub_ds, pa.dataset.UnionDataset):
         print(f'sorry, currently only supports pa.dataset.UnionDataset, not {type(hub_ds)}')
         return
 
-    # create the hub_dir group lines
-    hub_dir_lines = ['[b]hub_dir[/b]:',
-                     f'- {hub_dir}']
+    # create the hub_path group lines
+    hub_path_lines = ['[b]hub_path[/b]:',
+                     f'- {hub_path}']
 
     # create the schema group lines
     schema_lines = ['\n[b]schema[/b]:']
@@ -83,13 +83,13 @@ def print_dataset_info(hub_dir):
     console = Console()
     console.print(
         Panel(
-            Group(Group(*hub_dir_lines), Group(*schema_lines), Group(*dataset_lines)),
+            Group(Group(*hub_path_lines), Group(*schema_lines), Group(*dataset_lines)),
             border_style='green',
             expand=False,
             padding=(1, 2),
             subtitle='[italic]hubdata[/italic]',
             subtitle_align='right',
-            title=f'[bright_red]{hub_dir.name}[/bright_red]',
+            title=f'[bright_red]{hub_path.name}[/bright_red]',
             title_align='left')
     )
 

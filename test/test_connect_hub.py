@@ -11,17 +11,17 @@ import pytest
 from hubdata import connect_hub, create_hub_schema
 
 
-def test_hub_dir_existence():
-    with pytest.raises(RuntimeError, match='hub_dir not found'):
+def test_hub_path_existence():
+    with pytest.raises(RuntimeError, match='hub_path not found'):
         connect_hub(Path('test/hubs/example-complex-forecast-hub') / 'nonexistent-dir')
 
 
 def test_hub_fields():
-    hub_dir = Path('test/hubs/example-complex-scenario-hub')
-    hub_connection = connect_hub(hub_dir)  # default schema
+    hub_path = Path('test/hubs/example-complex-scenario-hub')
+    hub_connection = connect_hub(hub_path)  # default schema
 
-    # check hub_dir
-    assert hub_connection.hub_dir == hub_dir
+    # check hub_path
+    assert hub_connection.hub_path == hub_path
 
     # spot-check admin
     assert list(hub_connection.admin.keys()) == ['schema_version', 'name', 'maintainer', 'contact', 'repository',
@@ -32,7 +32,7 @@ def test_hub_fields():
     assert len(hub_connection.tasks['rounds']) == 4
 
     # check schema
-    assert connect_hub(hub_dir).schema == create_hub_schema(hub_connection.tasks)
+    assert connect_hub(hub_path).schema == create_hub_schema(hub_connection.tasks)
 
     # spot-check model_output_dir
     hub_connection = connect_hub(Path('test/hubs/simple'))
@@ -70,7 +70,7 @@ def test_admin_model_output_dir(tmp_path):
 def test_missing_files_or_dirs(tmp_path, hub_config_file):
     """
     tests file not found or directory not found cases. notes:
-    - the case of hub_dir itself missing is tested above by `test_hub_dir_existence()`
+    - the case of hub_path itself missing is tested above by `test_hub_path_existence()`
     - the case of model-output dir missing is tested above by `test_admin_model_output_dir()`
     """
     shutil.copytree('test/hubs/example-complex-forecast-hub/', tmp_path, dirs_exist_ok=True)

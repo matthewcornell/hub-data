@@ -51,7 +51,7 @@ The package provides a CLI called `hubdata` (defined in `pyproject.toml`'s "proj
 uv run hubdata schema test/hubs/flu-metrocast
 ╭─ flu-metrocast ─────────────╮
 │                             │
-│  hub_dir:                   │
+│  hub_path:                  │
 │  - test/hubs/flu-metrocast  │
 │                             │
 │  schema:                    │
@@ -70,7 +70,7 @@ uv run hubdata schema test/hubs/flu-metrocast
 uv run hubdata dataset test/hubs/flu-metrocast
 ╭─ flu-metrocast ─────────────╮
 │                             │
-│  hub_dir:                   │
+│  hub_path:                  │
 │  - test/hubs/flu-metrocast  │
 │                             │
 │  schema:                    │

@@ -29,7 +29,7 @@ class HubConnection:
     create instances of this class, rather than by direct instantiation.
 
     Instance variables:
-    - hub_dir: Path to a hub's root directory. see: https://docs.hubverse.io/en/latest/user-guide/hub-structure.html
+    - hub_path: Path to a hub's root directory. see: https://docs.hubverse.io/en/latest/user-guide/hub-structure.html
     - schema: the pa.Schema for `HubConnection.get_dataset()`. created via `create_hub_schema()`
     - admin: the hub's `admin.json` contents as a dict
     - tasks: "" `tasks.json` ""
@@ -37,18 +37,18 @@ class HubConnection:
     """
 
 
-    def __init__(self, hub_dir: Path):
+    def __init__(self, hub_path: Path):
         """
-        :param hub_dir: Path to a hub's root directory. see: https://docs.hubverse.io/en/latest/user-guide/hub-structure.html
+        :param hub_path: Path to a hub's root directory. see: https://docs.hubverse.io/en/latest/user-guide/hub-structure.html
         """
 
-        # set hub_dir, first checking for existence
-        self.hub_dir = hub_dir
-        if not self.hub_dir.exists():
-            raise RuntimeError(f'hub_dir not found: {self.hub_dir}')
+        # set hub_path, first checking for existence
+        self.hub_path = hub_path
+        if not self.hub_path.exists():
+            raise RuntimeError(f'hub_path not found: {self.hub_path}')
 
         # set self.admin, first checking for admin.json existence
-        admin_json_file = self.hub_dir / 'hub-config' / 'admin.json'
+        admin_json_file = self.hub_path / 'hub-config' / 'admin.json'
         if not admin_json_file.exists():
             raise RuntimeError(f'admin.json not found: {admin_json_file}')
 
@@ -56,7 +56,7 @@ class HubConnection:
             self.admin: dict = json.load(fp)
 
         # set self.tasks, first checking for tasks.json existence
-        tasks_json_file = self.hub_dir / 'hub-config' / 'tasks.json'
+        tasks_json_file = self.hub_path / 'hub-config' / 'tasks.json'
         if not tasks_json_file.exists():
             raise RuntimeError(f'tasks.json not found: {tasks_json_file}')
 
@@ -68,7 +68,7 @@ class HubConnection:
 
         # set self.model_output_dir, first checking for directory existence
         model_output_dir_name = self.admin['model_output_dir'] if 'model_output_dir' in self.admin else 'model-output'
-        model_output_dir = Path(hub_dir / model_output_dir_name)
+        model_output_dir = Path(hub_path / model_output_dir_name)
         if not model_output_dir.exists():
             logger.warn(f'model_output_dir not found: {model_output_dir!r}')
         self.model_output_dir = model_output_dir
