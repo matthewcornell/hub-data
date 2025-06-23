@@ -51,10 +51,10 @@ print(pa_table.column_names)
 # ['reference_date', 'target', 'horizon', 'location', 'target_end_date', 'output_type', 'output_type_id', 'value', 'model_id']
 ```
 
-However, that function reads the entire dataset into memory, which could fail for large hubs. A more parsimonious approach is to use the [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) `columns` and `filter` arguments to limit what data is pulled into memory:
+However, that function reads the entire dataset into memory, which could be unnecessary or fail for large hubs. A more parsimonious approach is to use the [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) `columns` and `filter` arguments to select and filter only the information of interest and limit what data is pulled into memory:
 
 ```python
-# more parsimonious approach: load a subset of the data into memory
+# more parsimonious approach: load a subset of the data into memory (select only `target_end_date` and `value` associated with `Bronx` as location)
 pa_table = hub_ds.to_table(columns=['target_end_date', 'value'],
                            filter=pc.field('location') == 'Bronx')
 
@@ -69,7 +69,7 @@ As mentioned above, once you have a [pyarrow Table](https://arrow.apache.org/doc
 First, clone the https://github.com/cdcepi/FluSight-forecast-hub repository. This repo takes ~1.1GB of disk space and has ~2400 csv & parquet files totalling ~13M rows. (Counts are via the `hubdata dataset` command described above.)
 
 ```bash
-cd /<path_to_repos>/
+cd /<path_to_repos>/ # Path to folder that will host the clone example repository
 git clone https://github.com/cdcepi/FluSight-forecast-hub
 ```
 
@@ -95,13 +95,17 @@ hub_connection = connect_hub(hub_path)
 hub_ds = hub_connection.get_dataset()  # can take a minute for pyarrow to scan files
 
 # load the dataset into a pyarrow Table, limiting the columns and rows loaded into memory as described above
-pa_table = hub_ds.to_table(columns=['target_end_date', 'value'],
-                           filter=pc.field('location') == 'US')
+pa_table = hub_ds.to_table(columns=['target_end_date', 'value', 'output_type', 'output_type_id', 'reference_date'],
+                           filter=(pc.field('location') == 'US') & (pc.field('target') == 'wk inc flu hosp'))
 
 pa_table.shape
 # (264645, 2)
 
-# convert to a polars DataFrame and do some operations
+# convert to polars DataFrame
+pl_df = pl.from_arrow(pa_table) 
+pl_df
+
+# it's also possible to convert to a polars DataFrame and do some operations
 pl_df = (
     pl.from_arrow(pa_table)
     .group_by(pl.col('target_end_date'))
