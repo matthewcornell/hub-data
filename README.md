@@ -8,9 +8,9 @@ Python tools for accessing and working with hubverse Hub data
 
 1. Use `connect_hub()` to get a `HubConnection` object for a local hub directory. (NB: Currently we only support connecting to local hub directories and not S3 hubs. We anticipate adding support for the latter shortly.)
 2. Call `HubConnection.get_dataset()` to get a pyarrow [Dataset](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html) for the hub's model output directory.
-3. Work with the data by calling functions directly on the dataset, or use [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) to read the data into a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) . You can use pyarrow's [compute functions](https://arrow.apache.org/docs/python/compute.html) or convert the table to another format, such as [polars](https://docs.pola.rs/api/python/dev/reference/api/polars.from_arrow.html) or [pandas](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html#pyarrow.Table.to_pandas).
+3. Work with the data by calling functions directly on the dataset, or use [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) to read the data into a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) . You can use pyarrow's [compute functions](https://arrow.apache.org/docs/python/compute.html) or convert the table to another format, such as [Polars](https://docs.pola.rs/api/python/dev/reference/api/polars.from_arrow.html) or [pandas](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html#pyarrow.Table.to_pandas).
 
-For example, here is code to count the number of rows total in the `test/hubs/flu-metrocast` test hub.
+For example, here is code using native pyarrow commands to count the number of rows total in the `test/hubs/flu-metrocast` test hub, and then to get the unique locations in the dataset as a python list.
 
 First, start a python interpreter with the required libraries:
 
@@ -19,19 +19,132 @@ cd /<path_to_repos>/hub-data/
 uv run python3
 ```
 
-Then run this example code:
+Then run the following Python code. (Note that we've included Python output in comments.)
 
 ```python
 from pathlib import Path
 from hubdata import connect_hub
+import pyarrow.compute as pc
 
 
 hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
 hub_ds = hub_connection.get_dataset()
 hub_ds.count_rows()
+# 14895
+
+pc.unique(hub_ds.to_table()['location']).to_pylist()
+# ['Bronx', 'Brooklyn', 'Manhattan', 'NYC', 'Queens', 'Staten Island', 'Austin', 'Dallas', 'El Paso', 'Houston', 'San Antonio']
+
+pc.unique(hub_ds.to_table()['target']).to_pylist()
+# ['ILI ED visits', 'Flu ED visits pct']
 ```
 
-The output should be `14895`.
+## Memory considerations for large datasets
+
+As mentioned above, we use the pyarrow [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) function to load a dataset into a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) . For example, continuing the above Python session:
+
+```python
+# naive approach to getting a table: load entire dataset into memory
+pa_table = hub_ds.to_table()
+
+print(pa_table.column_names)
+# ['reference_date', 'target', 'horizon', 'location', 'target_end_date', 'output_type', 'output_type_id', 'value', 'model_id']
+
+print(pa_table.shape)
+# (14895, 9)
+```
+
+However, that function reads the entire dataset into memory, which could be unnecessary or fail for large hubs. A more parsimonious approach is to use the [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) `columns` and `filter` arguments to select and filter only the information of interest and limit what data is pulled into memory:
+
+```python
+# more parsimonious approach: load a subset of the data into memory (select only `target_end_date` and `value`
+# associated with `Bronx` as location)
+pa_table = hub_ds.to_table(columns=['target_end_date', 'value'],
+                           filter=pc.field('location') == 'Bronx')
+
+print(pa_table.shape)
+# (1350, 2)
+```
+
+## Working with data outside pyarrow: A Polars example
+
+As mentioned above, once you have a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) you can convert it to work with dataframe packages like [pandas](https://pandas.pydata.org/) and [Polars](https://docs.pola.rs/). Here we give an example of using the flu-metrocast test hub.
+
+First start a python session, installing the Polars package on the fly using `uv run`'s [--with argument](https://docs.astral.sh/uv/concepts/projects/run/#requesting-additional-dependencies):
+
+```bash
+uv run --with polars python3
+```
+
+Then run the following Python commands to see Polars integration in action:
+
+```python
+from pathlib import Path
+
+import polars as pl
+import pyarrow.compute as pc
+from hubdata import connect_hub
+
+
+# connect to the hub and get a pyarrow Dataset
+hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
+hub_ds = hub_connection.get_dataset()
+
+# load the dataset into a pyarrow Table, limiting the columns and rows loaded into memory as described above
+pa_table = hub_ds.to_table(columns=['target_end_date', 'value', 'output_type', 'output_type_id', 'reference_date'],
+                           filter=(pc.field('location') == 'Bronx') & (pc.field('target') == 'ILI ED visits'))
+
+pa_table.shape
+# (1350, 5)
+
+# convert to polars DataFrame
+pl_df = pl.from_arrow(pa_table) 
+pl_df
+# shape: (1_350, 5)
+# ┌─────────────────┬─────────────┬─────────────┬────────────────┬────────────────┐
+# │ target_end_date ┆ value       ┆ output_type ┆ output_type_id ┆ reference_date │
+# │ ---             ┆ ---         ┆ ---         ┆ ---            ┆ ---            │
+# │ date            ┆ f64         ┆ str         ┆ f64            ┆ date           │
+# ╞═════════════════╪═════════════╪═════════════╪════════════════╪════════════════╡
+# │ 2025-01-25      ┆ 1375.608634 ┆ quantile    ┆ 0.025          ┆ 2025-01-25     │
+# │ 2025-01-25      ┆ 1503.974675 ┆ quantile    ┆ 0.05           ┆ 2025-01-25     │
+# │ 2025-01-25      ┆ 1580.89009  ┆ quantile    ┆ 0.1            ┆ 2025-01-25     │
+# │ 2025-01-25      ┆ 1630.75     ┆ quantile    ┆ 0.25           ┆ 2025-01-25     │
+# │ 2025-01-25      ┆ 1664.0      ┆ quantile    ┆ 0.5            ┆ 2025-01-25     │
+# │ …               ┆ …           ┆ …           ┆ …              ┆ …              │
+# │ 2025-06-14      ┆ 386.850998  ┆ quantile    ┆ 0.5            ┆ 2025-05-24     │
+# │ 2025-06-14      ┆ 454.018488  ┆ quantile    ┆ 0.75           ┆ 2025-05-24     │
+# │ 2025-06-14      ┆ 538.585477  ┆ quantile    ┆ 0.9            ┆ 2025-05-24     │
+# │ 2025-06-14      ┆ 600.680743  ┆ quantile    ┆ 0.95           ┆ 2025-05-24     │
+# │ 2025-06-14      ┆ 658.922076  ┆ quantile    ┆ 0.975          ┆ 2025-05-24     │
+# └─────────────────┴─────────────┴─────────────┴────────────────┴────────────────┘
+
+# it's also possible to convert to a polars DataFrame and do some operations
+pl_df = (
+    pl.from_arrow(pa_table)
+    .group_by(pl.col('target_end_date'))
+    .agg(pl.col('value').count())
+)
+pl_df
+# shape: (22, 2)
+# ┌─────────────────┬───────┐
+# │ target_end_date ┆ value │
+# │ ---             ┆ ---   │
+# │ date            ┆ u32   │
+# ╞═════════════════╪═══════╡
+# │ 2025-04-26      ┆ 90    │
+# │ 2025-05-17      ┆ 90    │
+# │ 2025-06-07      ┆ 45    │
+# │ 2025-03-01      ┆ 54    │
+# │ 2025-02-08      ┆ 27    │
+# │ …               ┆ …     │
+# │ 2025-05-31      ┆ 63    │
+# │ 2025-02-22      ┆ 45    │
+# │ 2025-06-21      ┆ 9     │
+# │ 2025-03-15      ┆ 72    │
+# │ 2025-04-05      ┆ 90    │
+# └─────────────────┴───────┘
+```
 
 ## Run commands locally
 

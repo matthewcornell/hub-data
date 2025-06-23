@@ -74,9 +74,11 @@ def print_dataset_info(hub_path):
 
     # create the dataset group lines
     num_files = sum([len(child_ds.files) for child_ds in hub_ds.children])
+    file_types = ', '.join([child_ds.format.default_extname for child_ds in hub_ds.children])
     num_rows = hub_ds.count_rows()
     dataset_lines = ['\n[b]dataset[/b]:',
                      f'- [green]files[/green]: [bright_magenta]{num_files:,}[/bright_magenta]',
+                     f'- [green]types[/green]: [bright_magenta]{file_types}[/bright_magenta]',
                      f'- [green]rows[/green]: [bright_magenta]{num_rows:,}[/bright_magenta]']
 
     # finally, print a Panel containing all the groups
