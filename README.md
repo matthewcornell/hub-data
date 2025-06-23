@@ -34,6 +34,9 @@ hub_ds.count_rows()
 
 pc.unique(hub_ds.to_table()['location']).to_pylist()
 # ['Bronx', 'Brooklyn', 'Manhattan', 'NYC', 'Queens', 'Staten Island', 'Austin', 'Dallas', 'El Paso', 'Houston', 'San Antonio']
+
+pc.unique(hub_ds.to_table()['target']).to_pylist()
+# ['ILI ED visits', 'Flu ED visits pct']
 ```
 
 ## Memory considerations for large datasets
@@ -44,17 +47,18 @@ As mentioned above, we use the pyarrow [Dataset.to_table()](https://arrow.apache
 # naive approach to getting a table: load entire dataset into memory
 pa_table = hub_ds.to_table()
 
-print(pa_table.shape)
-# (14895, 9)
-
 print(pa_table.column_names)
 # ['reference_date', 'target', 'horizon', 'location', 'target_end_date', 'output_type', 'output_type_id', 'value', 'model_id']
+
+print(pa_table.shape)
+# (14895, 9)
 ```
 
 However, that function reads the entire dataset into memory, which could be unnecessary or fail for large hubs. A more parsimonious approach is to use the [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) `columns` and `filter` arguments to select and filter only the information of interest and limit what data is pulled into memory:
 
 ```python
-# more parsimonious approach: load a subset of the data into memory (select only `target_end_date` and `value` associated with `Bronx` as location)
+# more parsimonious approach: load a subset of the data into memory (select only `target_end_date` and `value`
+# associated with `Bronx` as location)
 pa_table = hub_ds.to_table(columns=['target_end_date', 'value'],
                            filter=pc.field('location') == 'Bronx')
 
@@ -64,22 +68,15 @@ print(pa_table.shape)
 
 ## Working with data outside pyarrow: A Polars example
 
-As mentioned above, once you have a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) you can convert it to work with dataframe packages like [pandas](https://pandas.pydata.org/) and [Polars](https://docs.pola.rs/). Here we give an example of using the latter with a larger hub.
+As mentioned above, once you have a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) you can convert it to work with dataframe packages like [pandas](https://pandas.pydata.org/) and [Polars](https://docs.pola.rs/). Here we give an example of using the flu-metrocast test hub.
 
-First, clone the https://github.com/cdcepi/FluSight-forecast-hub repository. This repo takes ~1.1GB of disk space and has ~2400 csv & parquet files totalling ~13M rows. (Counts are via the `hubdata dataset` command described above.)
-
-```bash
-cd /<path_to_repos>/ # Path to folder that will host the clone example repository
-git clone https://github.com/cdcepi/FluSight-forecast-hub
-```
-
-Then start a python session, installing the Polars package on the fly using `uv run`'s [--with argument](https://docs.astral.sh/uv/concepts/projects/run/#requesting-additional-dependencies):
+First start a python session, installing the Polars package on the fly using `uv run`'s [--with argument](https://docs.astral.sh/uv/concepts/projects/run/#requesting-additional-dependencies):
 
 ```bash
 uv run --with polars python3
 ```
 
-Finally, run the following Python commands to see Polars integration in action:
+Then run the following Python commands to see Polars integration in action:
 
 ```python
 from pathlib import Path
@@ -90,20 +87,37 @@ from hubdata import connect_hub
 
 
 # connect to the hub and get a pyarrow Dataset
-hub_path = Path('/<path_to_repos>/FluSight-forecast-hub')
-hub_connection = connect_hub(hub_path)
-hub_ds = hub_connection.get_dataset()  # can take a minute for pyarrow to scan files
+hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
+hub_ds = hub_connection.get_dataset()
 
 # load the dataset into a pyarrow Table, limiting the columns and rows loaded into memory as described above
 pa_table = hub_ds.to_table(columns=['target_end_date', 'value', 'output_type', 'output_type_id', 'reference_date'],
-                           filter=(pc.field('location') == 'US') & (pc.field('target') == 'wk inc flu hosp'))
+                           filter=(pc.field('location') == 'Bronx') & (pc.field('target') == 'ILI ED visits'))
 
 pa_table.shape
-# (264645, 2)
+# (1350, 5)
 
 # convert to polars DataFrame
 pl_df = pl.from_arrow(pa_table) 
 pl_df
+# shape: (1_350, 5)
+# ┌─────────────────┬─────────────┬─────────────┬────────────────┬────────────────┐
+# │ target_end_date ┆ value       ┆ output_type ┆ output_type_id ┆ reference_date │
+# │ ---             ┆ ---         ┆ ---         ┆ ---            ┆ ---            │
+# │ date            ┆ f64         ┆ str         ┆ f64            ┆ date           │
+# ╞═════════════════╪═════════════╪═════════════╪════════════════╪════════════════╡
+# │ 2025-01-25      ┆ 1375.608634 ┆ quantile    ┆ 0.025          ┆ 2025-01-25     │
+# │ 2025-01-25      ┆ 1503.974675 ┆ quantile    ┆ 0.05           ┆ 2025-01-25     │
+# │ 2025-01-25      ┆ 1580.89009  ┆ quantile    ┆ 0.1            ┆ 2025-01-25     │
+# │ 2025-01-25      ┆ 1630.75     ┆ quantile    ┆ 0.25           ┆ 2025-01-25     │
+# │ 2025-01-25      ┆ 1664.0      ┆ quantile    ┆ 0.5            ┆ 2025-01-25     │
+# │ …               ┆ …           ┆ …           ┆ …              ┆ …              │
+# │ 2025-06-14      ┆ 386.850998  ┆ quantile    ┆ 0.5            ┆ 2025-05-24     │
+# │ 2025-06-14      ┆ 454.018488  ┆ quantile    ┆ 0.75           ┆ 2025-05-24     │
+# │ 2025-06-14      ┆ 538.585477  ┆ quantile    ┆ 0.9            ┆ 2025-05-24     │
+# │ 2025-06-14      ┆ 600.680743  ┆ quantile    ┆ 0.95           ┆ 2025-05-24     │
+# │ 2025-06-14      ┆ 658.922076  ┆ quantile    ┆ 0.975          ┆ 2025-05-24     │
+# └─────────────────┴─────────────┴─────────────┴────────────────┴────────────────┘
 
 # it's also possible to convert to a polars DataFrame and do some operations
 pl_df = (
@@ -111,25 +125,24 @@ pl_df = (
     .group_by(pl.col('target_end_date'))
     .agg(pl.col('value').count())
 )
-
 pl_df
-# shape: (69, 2)
+# shape: (22, 2)
 # ┌─────────────────┬───────┐
 # │ target_end_date ┆ value │
 # │ ---             ┆ ---   │
-# │ str             ┆ u32   │
+# │ date            ┆ u32   │
 # ╞═════════════════╪═══════╡
-# │ 2025-05-24      ┆ 5242  │
-# │ 2023-09-30      ┆ 28    │
-# │ 2025-05-31      ┆ 4907  │
-# │ 2023-11-25      ┆ 3584  │
-# │ 2024-03-23      ┆ 3943  │
+# │ 2025-04-26      ┆ 90    │
+# │ 2025-05-17      ┆ 90    │
+# │ 2025-06-07      ┆ 45    │
+# │ 2025-03-01      ┆ 54    │
+# │ 2025-02-08      ┆ 27    │
 # │ …               ┆ …     │
-# │ 2025-04-05      ┆ 5542  │
-# │ 2024-05-18      ┆ 1644  │
-# │ 2023-11-04      ┆ 3341  │
-# │ 2025-03-01      ┆ 5199  │
-# │ 2025-06-07      ┆ 3620  │
+# │ 2025-05-31      ┆ 63    │
+# │ 2025-02-22      ┆ 45    │
+# │ 2025-06-21      ┆ 9     │
+# │ 2025-03-15      ┆ 72    │
+# │ 2025-04-05      ┆ 90    │
 # └─────────────────┴───────┘
 ```
 
