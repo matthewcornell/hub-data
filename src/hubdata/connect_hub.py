@@ -94,3 +94,11 @@ class HubConnection:
                     for file_format in self.admin['file_format']]
         return ds.dataset([dataset for dataset in datasets
                            if isinstance(dataset, pa.dataset.FileSystemDataset) and (len(dataset.files) != 0)])
+
+
+    def to_table(self, *args, **kwargs) -> pa.Table:
+        """
+        A helper function that simply passes args and kwargs to `pyarrow.dataset.Dataset.to_table()`, returning the
+        `pyarrow.Table`.
+        """
+        return self.get_dataset().to_table(*args, **kwargs)

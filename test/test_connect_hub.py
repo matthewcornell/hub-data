@@ -154,3 +154,11 @@ def test_query_data():
                            & (pc.field('output_type_id') == 0.5))
     assert len(hub_ds.children[0].files) == 31
     assert hub_ds.count_rows() == 31  # only one row matches per file
+
+
+def test_to_table():
+    hub_connection = connect_hub(Path('test/hubs/v4_flusight'))
+    hub_ds = hub_connection.get_dataset()
+    table1 = hub_ds.to_table()
+    table2 = hub_connection.to_table()
+    assert table1 == table2
