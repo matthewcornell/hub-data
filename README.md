@@ -8,7 +8,7 @@ Python tools for accessing and working with hubverse Hub data
 
 1. Use `connect_hub()` to get a `HubConnection` object for a local hub directory. (NB: Currently we only support connecting to local hub directories and not S3 hubs. We anticipate adding support for the latter shortly.)
 2. Call `HubConnection.get_dataset()` to get a pyarrow [Dataset](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html) for the hub's model output directory.
-3. Work with the data by calling functions directly on the dataset, or use [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) to read the data into a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) . You can use pyarrow's [compute functions](https://arrow.apache.org/docs/python/compute.html) or convert the table to another format, such as [Polars](https://docs.pola.rs/api/python/dev/reference/api/polars.from_arrow.html) or [pandas](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html#pyarrow.Table.to_pandas).
+3. Work with the data by either calling functions directly on the dataset (not as common) or calling [Dataset.to_table()](https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.to_table) to read the data into a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) . You can use pyarrow's [compute functions](https://arrow.apache.org/docs/python/compute.html) or convert the table to another format, such as [Polars](https://docs.pola.rs/api/python/dev/reference/api/polars.from_arrow.html) or [pandas](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html#pyarrow.Table.to_pandas).
 
 For example, here is code using native pyarrow commands to count the number of rows total in the `test/hubs/flu-metrocast` test hub, and then to get the unique locations in the dataset as a python list.
 
@@ -32,10 +32,11 @@ hub_ds = hub_connection.get_dataset()
 hub_ds.count_rows()
 # 14895
 
-pc.unique(hub_ds.to_table()['location']).to_pylist()
+pa_table = hub_ds.to_table()  # load all hub data into memory as a pyarrow Table
+pc.unique(pa_table['location']).to_pylist()
 # ['Bronx', 'Brooklyn', 'Manhattan', 'NYC', 'Queens', 'Staten Island', 'Austin', 'Dallas', 'El Paso', 'Houston', 'San Antonio']
 
-pc.unique(hub_ds.to_table()['target']).to_pylist()
+pc.unique(pa_table['target']).to_pylist()
 # ['ILI ED visits', 'Flu ED visits pct']
 ```
 
@@ -66,6 +67,21 @@ print(pa_table.shape)
 # (1350, 2)
 ```
 
+If you just want the pyarrow Table and don't need the pyarrow Dataset returned by `HubConnection.get_dataset()` then you can use the `HubConnection.to_table()` helper function, which calls `HubConnection.get_dataset()` for you and then passes its args through to `Dataset.to_table()`. So the above example in full would be:
+
+```python
+from pathlib import Path
+from hubdata import connect_hub
+import pyarrow.compute as pc
+
+
+hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
+pa_table = hub_connection.to_table(columns=['target_end_date', 'value'],
+                                   filter=pc.field('location') == 'Bronx')
+print(pa_table.shape)
+# (1350, 2)
+```
+
 ## Working with data outside pyarrow: A Polars example
 
 As mentioned above, once you have a [pyarrow Table](https://arrow.apache.org/docs/python/generated/pyarrow.Table.html) you can convert it to work with dataframe packages like [pandas](https://pandas.pydata.org/) and [Polars](https://docs.pola.rs/). Here we give an example of using the flu-metrocast test hub.
@@ -86,13 +102,10 @@ import pyarrow.compute as pc
 from hubdata import connect_hub
 
 
-# connect to the hub and get a pyarrow Dataset
+# connect to the hub and then get a pyarrow Table, limiting the columns and rows loaded into memory as described above 
 hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
-hub_ds = hub_connection.get_dataset()
-
-# load the dataset into a pyarrow Table, limiting the columns and rows loaded into memory as described above
-pa_table = hub_ds.to_table(columns=['target_end_date', 'value', 'output_type', 'output_type_id', 'reference_date'],
-                           filter=(pc.field('location') == 'Bronx') & (pc.field('target') == 'ILI ED visits'))
+pa_table = hub_connection.to_table(columns=['target_end_date', 'value', 'output_type', 'output_type_id', 'reference_date'],
+                                   filter=(pc.field('location') == 'Bronx') & (pc.field('target') == 'ILI ED visits'))
 
 pa_table.shape
 # (1350, 5)
@@ -124,6 +137,7 @@ pl_df = (
     pl.from_arrow(pa_table)
     .group_by(pl.col('target_end_date'))
     .agg(pl.col('value').count())
+    .sort('target_end_date')
 )
 pl_df
 # shape: (22, 2)
@@ -132,17 +146,17 @@ pl_df
 # │ ---             ┆ ---   │
 # │ date            ┆ u32   │
 # ╞═════════════════╪═══════╡
-# │ 2025-04-26      ┆ 90    │
-# │ 2025-05-17      ┆ 90    │
-# │ 2025-06-07      ┆ 45    │
-# │ 2025-03-01      ┆ 54    │
+# │ 2025-01-25      ┆ 9     │
+# │ 2025-02-01      ┆ 18    │
 # │ 2025-02-08      ┆ 27    │
-# │ …               ┆ …     │
-# │ 2025-05-31      ┆ 63    │
+# │ 2025-02-15      ┆ 36    │
 # │ 2025-02-22      ┆ 45    │
+# │ …               ┆ …     │
+# │ 2025-05-24      ┆ 81    │
+# │ 2025-05-31      ┆ 63    │
+# │ 2025-06-07      ┆ 45    │
+# │ 2025-06-14      ┆ 27    │
 # │ 2025-06-21      ┆ 9     │
-# │ 2025-03-15      ┆ 72    │
-# │ 2025-04-05      ┆ 90    │
 # └─────────────────┴───────┘
 ```
 
