@@ -27,7 +27,7 @@ from hubdata import connect_hub
 import pyarrow.compute as pc
 
 
-hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
+hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))  # relative Path is OK, but str would need to be absolute
 hub_ds = hub_connection.get_dataset()
 hub_ds.count_rows()
 # 14895
@@ -39,6 +39,8 @@ pc.unique(pa_table['location']).to_pylist()
 pc.unique(pa_table['target']).to_pylist()
 # ['ILI ED visits', 'Flu ED visits pct']
 ```
+
+> Note: For a hub located in a local file system, `connect_hub()` accepts either a `Path` or `str` object. A Path can be a relative file system path, but a str must be an ABSOLUTE one. For the cli app (see below), the path must be absolute.
 
 ## Memory considerations for large datasets
 
@@ -67,6 +69,8 @@ print(pa_table.shape)
 # (1350, 2)
 ```
 
+## `HubConnection.to_table()` helper function
+
 If you just want the pyarrow Table and don't need the pyarrow Dataset returned by `HubConnection.get_dataset()` then you can use the `HubConnection.to_table()` helper function, which calls `HubConnection.get_dataset()` for you and then passes its args through to `Dataset.to_table()`. So the above example in full would be:
 
 ```python
@@ -81,6 +85,18 @@ pa_table = hub_connection.to_table(columns=['target_end_date', 'value'],
 print(pa_table.shape)
 # (1350, 2)
 ```
+
+## Working with a cloud-based hub
+
+This package supports connecting to cloud-based hubs (primarily AWS S3 for the hubverse) via pyarrow's [abstract filesystem interface](https://arrow.apache.org/docs/python/filesystems.html), which works with both local file systems and those on the cloud. Here's an example of accessing the hubverse bucket **example-complex-forecast-hub** (arn:aws:s3:::example-complex-forecast-hub) via the S3 URI **s3://example-complex-forecast-hub/**. For example, continuing the above Python session:
+
+```python
+hub_connection = connect_hub('s3://example-complex-forecast-hub/')
+print(hub_connection.to_table().shape)
+# (553264, 9)
+```
+
+> Note: This package's performance with cloud-based hubs can be slow due to how pyarrow's dataset scanning works.
 
 ## Working with data outside pyarrow: A Polars example
 
@@ -104,14 +120,15 @@ from hubdata import connect_hub
 
 # connect to the hub and then get a pyarrow Table, limiting the columns and rows loaded into memory as described above 
 hub_connection = connect_hub(Path('test/hubs/flu-metrocast'))
-pa_table = hub_connection.to_table(columns=['target_end_date', 'value', 'output_type', 'output_type_id', 'reference_date'],
-                                   filter=(pc.field('location') == 'Bronx') & (pc.field('target') == 'ILI ED visits'))
+pa_table = hub_connection.to_table(
+    columns=['target_end_date', 'value', 'output_type', 'output_type_id', 'reference_date'],
+    filter=(pc.field('location') == 'Bronx') & (pc.field('target') == 'ILI ED visits'))
 
 pa_table.shape
 # (1350, 5)
 
 # convert to polars DataFrame
-pl_df = pl.from_arrow(pa_table) 
+pl_df = pl.from_arrow(pa_table)
 pl_df
 # shape: (1_350, 5)
 # ┌─────────────────┬─────────────┬─────────────┬────────────────┬────────────────┐
@@ -172,50 +189,87 @@ cd /<path_to_repos>/hub-data/
 
 ### app (hubdata)
 
-The package provides a CLI called `hubdata` (defined in `pyproject.toml`'s "project.scripts" table). Here's an example of running the command to print a test hub's schema and its dataset info:
+The package provides a CLI called `hubdata` (defined in `pyproject.toml`'s "project.scripts" table). Here's an example of running the command to print a test hub's schema or its dataset info. Note that we use the `pwd` shell command to create an absolute path to pass to the app.
 
 ```bash
-uv run hubdata schema test/hubs/flu-metrocast
-╭─ flu-metrocast ─────────────╮
-│                             │
-│  hub_path:                  │
-│  - test/hubs/flu-metrocast  │
-│                             │
-│  schema:                    │
-│  - horizon: int32           │
-│  - location: string         │
-│  - model_id: string         │
-│  - output_type: string      │
-│  - output_type_id: double   │
-│  - reference_date: date32   │
-│  - target: string           │
-│  - target_end_date: date32  │
-│  - value: double            │
-│                             │
-╰─────────────────── hubdata ─╯
+uv run hubdata schema "$(pwd)/test/hubs/flu-metrocast"
+╭─ schema ─────────────────────────────────────────────────────────╮
+│                                                                  │
+│  hub_path:                                                       │
+│  - <path_to_repos>/hub-data/test/hubs/flu-metrocast              │
+│                                                                  │
+│  schema:                                                         │
+│  - horizon: int32                                                │
+│  - location: string                                              │
+│  - model_id: string                                              │
+│  - output_type: string                                           │
+│  - output_type_id: double                                        │
+│  - reference_date: date32                                        │
+│  - target: string                                                │
+│  - target_end_date: date32                                       │
+│  - value: double                                                 │
+│                                                                  │
+╰──────────────────────────────────────────────────────── hubdata ─╯
 
-uv run hubdata dataset test/hubs/flu-metrocast
-╭─ flu-metrocast ─────────────╮
-│                             │
-│  hub_path:                  │
-│  - test/hubs/flu-metrocast  │
-│                             │
-│  schema:                    │
-│  - horizon: int32           │
-│  - location: string         │
-│  - model_id: string         │
-│  - output_type: string      │
-│  - output_type_id: double   │
-│  - reference_date: date32   │
-│  - target: string           │
-│  - target_end_date: date32  │
-│  - value: double            │
-│                             │
-│  dataset:                   │
-│  - files: 31                │
-│  - rows: 14,895             │
-│                             │
-╰─────────────────── hubdata ─╯
+uv run hubdata dataset "$(pwd)/test/hubs/flu-metrocast"
+╭─ dataset ────────────────────────────────────────────────────────╮
+│                                                                  │
+│  hub_path:                                                       │
+│  - <path_to_repos>/hub-data/test/hubs/flu-metrocast              │
+│                                                                  │
+│  schema:                                                         │
+│  - horizon: int32                                                │
+│  - location: string                                              │
+│  - model_id: string                                              │
+│  - output_type: string                                           │
+│  - output_type_id: double                                        │
+│  - reference_date: date32                                        │
+│  - target: string                                                │
+│  - target_end_date: date32                                       │
+│  - value: double                                                 │
+│                                                                  │
+│  dataset:                                                        │
+│  - files: 31                                                     │
+│  - types: csv (found) | csv (admin)                              │
+│  - rows: 14,895                                                  │
+│                                                                  │
+╰──────────────────────────────────────────────────────── hubdata ─╯
+```
+
+Output explanation:
+- `hub_path`: argument passed to the app
+- `schema`: schema obtained via the API's `create_hub_schema()` function
+- `dataset`:
+    - `files`: number of files in the dataset
+    - `types`: list of the file types a) actually found in the dataset (**found**), and b) ones specified in the hub's _admin.json_ file (**admin**).
+    - `rows`: total number of dataset rows
+
+The cli tool also works with S3 URIs:
+
+```bash
+uv run hubdata dataset s3://example-complex-forecast-hub/
+╭─ dataset ────────────────────────────────╮
+│                                          │
+│  hub_path:                               │
+│  - s3://example-complex-forecast-hub/    │
+│                                          │
+│  schema:                                 │
+│  - horizon: int32                        │
+│  - location: string                      │
+│  - model_id: string                      │
+│  - output_type: string                   │
+│  - output_type_id: string                │
+│  - reference_date: date32                │
+│  - target: string                        │
+│  - target_end_date: date32               │
+│  - value: double                         │
+│                                          │
+│  dataset:                                │
+│  - files: 12                             │
+│  - types: parquet (found) | csv (admin)  │
+│  - rows: 553,264                         │
+│                                          │
+╰──────────────────────────────── hubdata ─╯
 ```
 
 ### tests (pytest)
