@@ -22,6 +22,9 @@ def cli():
 def print_schema(hub_path):
     """
     A subcommand that prints the output of `create_hub_schema()` for `hub_path`.
+
+    :param hub_path: as passed to `connect_hub()`: either a local file system hub path or a cloud-based hub URI.
+        Note: A local file system path must be an ABSOLUTE path and not a relative one
     """
     try:
         hub_connection = connect_hub(hub_path)
@@ -48,7 +51,7 @@ def print_schema(hub_path):
             padding=(1, 2),
             subtitle='[italic]hubdata[/italic]',
             subtitle_align='right',
-            title=f'[bright_red]{hub_path.name}[/bright_red]',
+            title='[bright_red]schema[/bright_red]',
             title_align='left')
     )
 
@@ -60,7 +63,8 @@ def print_dataset_info(hub_path):
     A subcommand that prints dataset information for `hub_path`. Currently only works with a UnionDataset of
     FileSystemDatasets.
 
-    :param hub_path: as passed to `connect_hub()`: either a local file system hub path or a cloud-based hub URI
+    :param hub_path: as passed to `connect_hub()`: either a local file system hub path or a cloud-based hub URI.
+        Note: A local file system path must be an ABSOLUTE path and not a relative one
     """
     try:
         hub_connection = connect_hub(hub_path)
@@ -104,7 +108,7 @@ def print_dataset_info(hub_path):
             padding=(1, 2),
             subtitle='[italic]hubdata[/italic]',
             subtitle_align='right',
-            title=f'[bright_red]{hub_path}[/bright_red]',
+            title='[bright_red]dataset[/bright_red]',
             title_align='left')
     )
 
