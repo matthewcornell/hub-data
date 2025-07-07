@@ -16,7 +16,12 @@ TODO installing from https://pypi.org/
 
 ### Development
 
-TODO installing from GitHub
+You can install the development version with:
+
+```bash
+pip install --upgrade pip
+pip install git+https://github.com/hubverse-org/hub-data
+```
 
 ## Contributing
 

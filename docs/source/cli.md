@@ -2,6 +2,8 @@
 
 The package provides a command-line interface (CLI) called `hubdata` which provides two subcommands:
 
+This package is based on the [python version](https://arrow.apache.org/docs/python/index.html) of Apache's [Arrow library](https://arrow.apache.org/docs/index.html).
+
 - `schema`: Print a hub's schema, i.e., the columns and datatypes that are inferred from the hub's [tasks.json](https://docs.hubverse.io/en/latest/user-guide/hub-config.html) file.
 - `dataset`: Print summary information about the data in a hub's [model output directory](https://docs.hubverse.io/en/latest/user-guide/model-output.html). It also includes the same information as the `schema` subcommand. Note that this command can take some time to run as it must scan all data files in the hub.
 
@@ -44,7 +46,7 @@ uv run hubdata schema "$(pwd)/test/hubs/flu-metrocast"
 
 Output explanation:
 
-- `hub_path`: argument passed to the app. (We've substituted the **/<path_to_repos>/** placeholder for the actual directory location.)
+- `hub_path`: argument passed to the app (here we show **/<path_to_repos>/**, but your output will show the actual directory location)
 - `schema`: schema obtained via the API's `create_hub_schema()` function
 
 ## Show model output information of a test hub - the `dataset` subcommand
@@ -84,7 +86,7 @@ Output explanation:
 - `dataset`: information about files in the hub's model output directory:
     - `files`: number of files in the dataset
     - `types`: list of the file types a) actually found in the dataset (**found**), and b) ones specified in the hub's
-      _admin.json_ file (**admin**).
+      _admin.json_ file (**admin**)
     - `rows`: total number of dataset rows
 
 ## Show model output information of an S3-based hub

@@ -58,3 +58,12 @@ To do the same and then serve documentation locally for debugging:
 ```bash
 uv run --group docs sphinx-autobuild docs/source docs/_build/html
 ```
+
+## build the package and publish to test.pypi.org
+
+First set and export the `UV_PUBLISH_TOKEN` environment variable to a token obtained via your test.pypi.org account and then run:
+
+```bash
+uv build
+uv publish --index testpypi
+```
