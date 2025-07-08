@@ -1,5 +1,5 @@
 [project]
-name = "hubdata"
+name = "hubdatafork"
 dynamic = ['version']
 description = "Python tools for accessing and working with hubverse Hub data"
 authors = [{name = "Matthew Cornell", email = "cornell@umass.edu"}]
