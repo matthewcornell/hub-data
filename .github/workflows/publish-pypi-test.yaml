@@ -33,7 +33,7 @@ jobs:
     outputs:
       # set publish_to_testpypi = true to publish to test PyPI after
       # pushing to main (requires trusted publisher setup on test PyPI)
-      publish_to_testpypi: false
+      publish_to_testpypi: 'true'
 
     steps:
       - name: Checkout 🛎️
